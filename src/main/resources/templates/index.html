@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="el" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Παγκόσμιο Ρολόι & Καιρός</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<header>
+    <div class="header-inner">
+        <div class="logo">
+            <span class="logo-globe">🌍</span>
+            <div>
+                <h1>WORLD<span class="accent">CLOCK</span></h1>
+                <p class="tagline">Ώρα & Καιρός σε Πραγματικό Χρόνο</p>
+            </div>
+        </div>
+        <div class="header-time">
+            <div class="utc-label">UTC</div>
+            <div id="utc-clock" class="utc-time">--:--:--</div>
+        </div>
+    </div>
+</header>
+
+<main>
+    <!-- Stats bar -->
+    <div class="stats-bar">
+        <div class="stat">
+            <span class="stat-num" th:text="${#lists.size(cities)}">0</span>
+            <span class="stat-label">Πόλεις</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+            <span class="stat-num" id="live-indicator">●</span>
+            <span class="stat-label">LIVE</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+            <span class="stat-num">24</span>
+            <span class="stat-label">Ζώνες Ώρας</span>
+        </div>
+    </div>
+
+    <!-- City Grid -->
+    <div class="sort-controls" style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px; padding: 0 20px;">
+        <button class="add-btn" onclick="sortCities('temp-desc')" style="background: #ff7e5f;">🔥 Πιο Ζεστές</button>
+        <button class="add-btn" onclick="sortCities('temp-asc')" style="background: #00c6ff;">❄️ Πιο Κρύες</button>
+        <button class="add-btn" onclick="sortCities('name')" style="background: #6a11cb;">🔤 Αλφαβητικά</button>
+    </div>
+    <section class="city-grid" id="city-grid">
+
+        <div th:each="city : ${cities}"
+             class="city-card"
+             th:data-timezone="${city.timezone}"
+             th:data-weather="${city.weathermain}"
+            th:data-temp="${city.temperature}"
+            th:data-name="${city.name}">
+
+            <div class="card-top">
+                <div class="city-header">
+                    <div>
+                        <h2 class="city-name" th:text="${city.name}">City</h2>
+                        <p class="city-country" th:text="${city.country}">Country</p>
+                    </div>
+                    <div class="weather-icon" th:text="${city.weathericon}">☀️</div>
+                </div>
+
+                <div class="time-display">
+                    <span class="city-time"
+                          th:text="${city.localtime}"
+                          th:data-timezone="${city.timezone}">--:--:--</span>
+                </div>
+
+                <div class="date-row">
+                    <span class="city-day" th:text="${city.dayofweek}">--</span>
+                    <span class="city-date" th:text="${city.date}">--</span>
+                </div>
+            </div>
+
+            <div class="card-weather">
+                <div class="temp-main">
+                    <span class="temp-value"
+                          th:text="${#numbers.formatDecimal(city.temperature, 1, 0) + '°C'}"
+                          th:if="${!#numbers.formatDecimal(city.temperature,1,0).equals('NaN')}">--°C</span>
+                    <span class="temp-value" th:unless="${!#numbers.formatDecimal(city.temperature,1,0).equals('NaN')}">N/A</span>
+                    <span class="weather-desc" th:text="${city.weatherdescription}">--</span>
+                </div>
+                <div class="weather-details">
+                    <div class="weather-detail">
+                        <span class="detail-icon">🌡️</span>
+                        <span th:text="'Αίσθηση ' + ${#numbers.formatDecimal(city.feelslike, 1, 0)} + '°'">--</span>
+                    </div>
+                    <div class="weather-detail">
+                        <span class="detail-icon">💧</span>
+                        <span th:text="${city.humidity} + '%'">--%</span>
+                    </div>
+                    <div class="weather-detail">
+                        <span class="detail-icon">💨</span>
+                        <span th:text="${#numbers.formatDecimal(city.windspeed, 1, 1)} + ' m/s'">-- m/s</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <span class="timezone-badge" th:text="${city.timezone}">TZ</span>
+                <button class="delete-btn" th:onclick="'deleteCity(' + ${city.id} + ')'" style="background: none; border: none; cursor: pointer; color: #ff4d4d; font-size: 1.2rem;" title="Διαγραφή Πόλης">❌</button>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- Add City Panel -->
+    <section class="add-city-section">
+        <h3 class="section-title">➕ Προσθήκη Πόλης</h3>
+        <div class="add-form">
+            <input type="text" id="new-city-name" placeholder="Όνομα πόλης (π.χ. Βερολίνο)" class="form-input">
+            <input type="text" id="new-city-country" placeholder="Χώρα" class="form-input">
+            <select id="new-city-timezone" class="form-input">
+                <option value="">-- Επιλέξτε ζώνη ώρας --</option>
+                <option th:each="tz : ${timezones}" th:value="${tz}" th:text="${tz}">TZ</option>
+            </select>
+            <input type="number" id="new-city-lat" placeholder="Γεωγρ. Πλάτος (π.χ. 52.52)" class="form-input" step="0.0001">
+            <input type="number" id="new-city-lon" placeholder="Γεωγρ. Μήκος (π.χ. 13.40)" class="form-input" step="0.0001">
+            <button class="add-btn" onclick="addCity()">Προσθήκη</button>
+        </div>
+        <p class="form-hint">💡 Βρείτε συντεταγμένες στο Google Maps (δεξί κλικ → "Τι υπάρχει εδώ;")</p>
+    </section>
+</main>
+
+<footer>
+    <p>Δεδομένα καιρού από <a href="https://openweathermap.org/" target="_blank">Open-Meteo</a> · Δωρεάν & Ανοιχτού Κώδικα</p>
+</footer>
+
+<div id="toast" class="toast"></div>
+
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>
